@@ -42,7 +42,7 @@ curl -x http://localhost:8080 http://www.google.com
 ```
 This way, the request goes directly to the IP address, skipping the local DNS lookup.
 - For chrome
-import ca.pem to local chrome,url:
+import ca.pem to local chrome url, then set http proxy in chrome extension(ZeroOmega):
 ```
 chrome://certificate-manager/localcerts/usercerts
 ```
