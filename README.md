@@ -17,7 +17,7 @@ cd dohp
 go build -o dohp main.go
 ```
 ## Usage
-### Basic Usage
+### Basic Usage(proxy mode)
 To start the HTTP proxy on a specific address using the default DNS over HTTPS resolver:
 
 ```bash
@@ -39,13 +39,11 @@ When making requests, use the IP address instead of the domain name. For example
 ```bash
 curl -x http://localhost:8080 http://www.google.com
 ```
-
 This way, the request goes directly to the IP address, skipping the local DNS lookup.
 
-This option disables the default behavior of ignoring certificate errors.
-- Verbose Logging:
+## Direct connection mode
 ```bash
-./dohp -L http://:8080 -v
+./dohp -I -v  https://www.google.com
 ```
 Enables verbose logging, which includes detailed information about TLS handshakes, packets, and ClientHello details.
 Command Line Flags
