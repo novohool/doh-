@@ -35,12 +35,17 @@ To bypass local DNS queries and directly access an IP address, you can use the I
 
 #### Configure Your Application:
 Set your application to use the proxy address (http://localhost:8080 in the previous examples).
-When making requests, use the IP address instead of the domain name. For example, in a curl command:
+When making requests, use the IP address instead of the domain name.
+- For example, in a curl command:
 ```bash
 curl -x http://localhost:8080 http://www.google.com
 ```
 This way, the request goes directly to the IP address, skipping the local DNS lookup.
-
+- For chrome
+import ca.pem to local chrome,url:
+```
+chrome://certificate-manager/localcerts/usercerts
+```
 ## Direct connection mode
 ```bash
 ./dohp -I -v  https://www.google.com
