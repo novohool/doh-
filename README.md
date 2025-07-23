@@ -1,5 +1,5 @@
-# dohp
-dohp is a tool designed to transform DNS over HTTPS (DoH) requests into HTTP proxy requests. This utility allows users to leverage a specified HTTP proxy address to handle DNS queries and utilize DNS over HTTPS resolvers for domain name resolution. One of its significant features is the ability to bypass local DNS queries by directly accessing IP addresses, which can be useful in scenarios where local DNS may be restricted or unreliable.
+# doh-
+doh- is a tool designed to transform DNS over HTTPS (DoH) requests into HTTP proxy requests. This utility allows users to leverage a specified HTTP proxy address to handle DNS queries and utilize DNS over HTTPS resolvers for domain name resolution. One of its significant features is the ability to bypass local DNS queries by directly accessing IP addresses, which can be useful in scenarios where local DNS may be restricted or unreliable.
 ## Features
 - DoH to HTTP Proxy Conversion: Converts DNS over HTTPS requests to standard HTTP proxy requests.
 - Customizable Resolver: Allows users to specify a DNS over HTTPS resolver URL.
@@ -9,26 +9,26 @@ dohp is a tool designed to transform DNS over HTTPS (DoH) requests into HTTP pro
 ## Installation
 - Clone the Repository:
 ```bash
-git clone https://github.com/novohool/dohp.git
-cd dohp
+git clone https://github.com/novohool/doh-.git
+cd doh-
 ```
 - Build the Binary:
 ```bash
-go build -o dohp main.go
+go build -o doh- main.go
 ```
 ## Usage
 ### Basic Usage(proxy mode)
 To start the HTTP proxy on a specific address using the default DNS over HTTPS resolver:
 
 ```bash
-./dohp -L http://:8080
+./doh- -L http://:8080
 ```
 This command starts the proxy on port 8080 and uses the default DNS over HTTPS resolver (`https://dns.google/dns-query`).
 - Custom DNS over HTTPS Resolver
 To use a custom DNS over HTTPS resolver:
 
 ```bash
-./dohp -L http://:8080 -doh https://your-doh-resolver/dns-query
+./doh- -L http://:8080 -doh https://your-doh-resolver/dns-query
 ```
 ### Bypass Local DNS with IP Access
 To bypass local DNS queries and directly access an IP address, you can use the IP address instead of the domain name in your requests. For example, if you know the IP address of a website is 192.0.2.1, you can make requests directly to this IP address through the proxy.
@@ -48,7 +48,7 @@ then set http proxy in chrome extension(ZeroOmega)
 
 ## Direct connection mode
 ```bash
-./dohp -I -v  https://www.google.com
+./doh- -I -v  https://www.google.com
 ```
 Enables verbose logging, which includes detailed information about TLS handshakes, packets, and ClientHello details.
 Command Line Flags
