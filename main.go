@@ -169,15 +169,6 @@ func newUTLSConn(network, addr, serverName string) (net.Conn, error) {
 		uConn := utls.UClient(conn, config, clientHelloID)
 		if *verbose {
 			log.Printf("[VERBOSE] TLS Client Hello details (fingerprint: golang default):")
-			if uConn.ClientHelloSpec != nil {
-				log.Printf("[VERBOSE]   Cipher Suites: %v", getCipherSuites(uConn.ClientHelloSpec.CipherSuites))
-				log.Printf("[VERBOSE]   Extensions: %v", getExtensions(uConn.ClientHelloSpec.Extensions))
-			} else {
-				log.Printf("[VERBOSE]   Cipher Suites: [not available before handshake]")
-				log.Printf("[VERBOSE]   Extensions: [not available before handshake]")
-				log.Printf("[VERBOSE]   Supported Curves: [not available before handshake]")
-				log.Printf("[VERBOSE]   Supported Points: [not available before handshake]")
-			}
 			log.Printf("[VERBOSE]   Supported Versions: %v", getSupportedVersions(config.MinVersion, config.MaxVersion))
 			log.Printf("[VERBOSE]   ServerName=%s", config.ServerName)
 		}
