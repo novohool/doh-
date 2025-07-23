@@ -172,8 +172,6 @@ func newUTLSConn(network, addr, serverName string) (net.Conn, error) {
 			if uConn.ClientHelloSpec != nil {
 				log.Printf("[VERBOSE]   Cipher Suites: %v", getCipherSuites(uConn.ClientHelloSpec.CipherSuites))
 				log.Printf("[VERBOSE]   Extensions: %v", getExtensions(uConn.ClientHelloSpec.Extensions))
-				log.Printf("[VERBOSE]   Supported Curves: %v", getSupportedCurves(uConn.ClientHelloSpec.SupportedCurves))
-				log.Printf("[VERBOSE]   Supported Points: %v", getSupportedPoints(uConn.ClientHelloSpec.SupportedPoints))
 			} else {
 				log.Printf("[VERBOSE]   Cipher Suites: [not available before handshake]")
 				log.Printf("[VERBOSE]   Extensions: [not available before handshake]")
