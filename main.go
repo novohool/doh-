@@ -733,11 +733,11 @@ func httpProxyHandler(addr string) error {
 
 // printHelp prints usage information
 func printHelp() {
-	fmt.Println(`doh- - Advanced HTTP proxy and DNS resolution tool
+	fmt.Println(`doh4 - Advanced HTTP proxy and DNS resolution tool
 
 Usage:
-  doh- -L http://:port [--doh URL] [-v]
-  doh- [curl-style options] <URL> [-v] [-I]
+  doh4 -L http://:port [--doh URL] [-v]
+  doh4 [curl-style options] <URL> [-v] [-I]
 
 Options:
   -L http://:port        Listen on specified port for HTTP proxy (e.g., http://:8080)
@@ -747,9 +747,9 @@ Options:
   -h, --help             Show this help message
 
 Examples:
-  doh- -L http://:8080 -v
-  doh- https://www.google.com -v
-  doh- -I https://example.com
+  doh4 -L http://:8080 -v
+  doh4 https://www.google.com -v
+  doh4 -I https://example.com
 `)
 }
 
@@ -785,7 +785,7 @@ func main() {
 
 	args := flag.Args()
 	if len(args) < 1 {
-		log.Fatal("Usage: doh- [options] URL")
+		log.Fatal("Usage: doh4 [options] URL")
 	}
 	requestURL = args[0]
 
@@ -832,7 +832,7 @@ func main() {
 			rawRequest := fmt.Sprintf(
 				"%s %s HTTP/1.1\r\n"+
 					"Host: %s\r\n"+
-					"User-Agent: doh-/1.0\r\n"+
+					"User-Agent: doh4/1.0\r\n"+
 					"Accept: */*\r\n"+
 					"Connection: close\r\n"+
 					"Accept-Encoding: identity\r\n\r\n",
