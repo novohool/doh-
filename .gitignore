@@ -21,8 +21,7 @@ profile.cov
 # vendor/
 
 # Go workspace file
-go.work
-go.work.sum
+go.*
 
 # env file
 .env
@@ -30,3 +29,5 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+ca.*

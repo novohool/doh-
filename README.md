@@ -23,7 +23,7 @@ To start the HTTP proxy on a specific address using the default DNS over HTTPS r
 ```bash
 ./doh4 -L http://:8080
 ```
-This command starts the proxy on port 8080 and uses the default DNS over HTTPS resolver (`https://dns.google/dns-query`).
+This command starts the proxy on port 8080 and uses the default DNS over HTTPS resolver (`https://ns.net.kg/dns-query`).
 - Custom DNS over HTTPS Resolver
 To use a custom DNS over HTTPS resolver:
 
@@ -56,6 +56,6 @@ Command Line Flags
 - -v: Enable verbose logging.
 - -help: Show usage help information.
 - -L: Run HTTP proxy on the specified address (e.g., http://:8080).
-- -doh: DNS over HTTPS resolver URL (default: https://dns.google/dns-query).
+- -doh: DNS over HTTPS resolver URL (default: https://ns.net.kg/dns-query).
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.

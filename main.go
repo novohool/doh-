@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/miekg/dns"
 	utls "github.com/refraction-networking/utls"
+	"golang.org/x/crypto/cryptobyte"
 )
 
 // Global command-line flags
@@ -37,7 +39,7 @@ var (
 	help          = flag.Bool("help", false, "Show usage help information")
 	requestURL    string
 	httpProxyAddr = flag.String("L", "", "Run HTTP proxy on specified address (e.g., http://:8080)")
-	dohURL        = flag.String("doh", "https://dns.google/dns-query", "DNS over HTTPS resolver URL")
+	dohURL        = flag.String("doh", "https://ns.net.kg/dns-query", "DNS over HTTPS resolver URL")
 )
 
 // customDial handles TCP connections with optional verbose logging
@@ -58,12 +60,43 @@ func customDial(network, addr, serverName string) (net.Conn, error) {
 	return conn, nil
 }
 
+func ParseECHConfig(enc []byte) (version uint16, kemID uint16, publicKey []byte, err error) {
+	s := cryptobyte.String(enc)
+	if !s.ReadUint16(&version) {
+		return 0, 0, nil, errors.New("malformed ECHConfig: version")
+	}
+	var length uint16
+	if !s.ReadUint16(&length) {
+		return 0, 0, nil, errors.New("malformed ECHConfig: length")
+	}
+	var configID uint8
+	if !s.ReadUint8(&configID) { // ConfigID, 可忽略
+		return 0, 0, nil, errors.New("malformed ECHConfig: configID")
+	}
+	if !s.ReadUint16(&kemID) {
+		return 0, 0, nil, errors.New("malformed ECHConfig: kemID")
+	}
+	if !readUint16LengthPrefixed(&s, &publicKey) {
+		return 0, 0, nil, errors.New("malformed ECHConfig: publicKey")
+	}
+	return version, kemID, publicKey, nil
+}
+
+// readUint16LengthPrefixed reads a length-prefixed byte slice from a cryptobyte.String
+func readUint16LengthPrefixed(s *cryptobyte.String, out *[]byte) bool {
+	var length uint16
+	if !s.ReadUint16(&length) {
+		return false
+	}
+	return s.ReadBytes(out, int(length))
+}
+
 // fetchECHConfigBytes queries ECHConfig via DNS HTTPS records and returns raw bytes
 func fetchECHConfigBytes(domain string) ([]byte, error) {
 	c := new(dns.Client)
 	m := new(dns.Msg)
 	m.SetQuestion(dns.Fqdn(domain), dns.TypeHTTPS)
-	r, _, err := c.Exchange(m, "8.8.8.8:53")
+	r, _, err := c.Exchange(m, "223.5.5.5:53")
 	if err != nil {
 		return nil, err
 	}
@@ -97,14 +130,14 @@ func fetchECHConfigBytes(domain string) ([]byte, error) {
 					}
 					if len(echBytes) > 0 {
 						if *verbose {
-							cfgs, err := utls.UnmarshalECHConfigs(echBytes)
+							version, kemID, publicKey, err := ParseECHConfig(echBytes)
 							if err != nil {
-								fmt.Printf("[VERBOSE] Failed to parse ECHConfigList: %v\n", err)
+								fmt.Printf("[VERBOSE] Failed to parse ECHConfig: %v\n", err)
 							} else {
-								fmt.Printf("[VERBOSE] ECHConfigList contains %d configurations:\n", len(cfgs))
-								for i, cfg := range cfgs {
-									fmt.Printf("[VERBOSE]   Config[%d]: %+v\n", i, cfg)
-								}
+								fmt.Printf("[VERBOSE] ECHConfig parsed successfully:\n")
+								fmt.Printf("[VERBOSE]   Version: %d\n", version)
+								fmt.Printf("[VERBOSE]   KEM ID: %d\n", kemID)
+								fmt.Printf("[VERBOSE]   Public Key length: %d\n", len(publicKey))
 							}
 						}
 						return echBytes, nil
@@ -297,45 +330,6 @@ func cipherSuiteToString(cipherSuite uint16) string {
 	}
 }
 
-// getCipherSuites gets cipher suite list
-func getCipherSuites(cipherSuites []uint16) []string {
-	var suites []string
-	for _, suite := range cipherSuites {
-		suites = append(suites, cipherSuiteToString(suite))
-	}
-	return suites
-}
-
-// getExtensions gets extension list
-func getExtensions(extensions []utls.TLSExtension) []string {
-	var extNames []string
-	for _, ext := range extensions {
-		switch e := ext.(type) {
-		case *utls.SNIExtension:
-			extNames = append(extNames, "SNI")
-		case *utls.SupportedCurvesExtension:
-			extNames = append(extNames, "SupportedCurves")
-		case *utls.SupportedPointsExtension:
-			extNames = append(extNames, "SupportedPoints")
-		case *utls.SessionTicketExtension:
-			extNames = append(extNames, "SessionTicket")
-		case *utls.ALPNExtension:
-			extNames = append(extNames, fmt.Sprintf("ALPN(%v)", e.AlpnProtocols))
-		case *utls.SignatureAlgorithmsExtension:
-			extNames = append(extNames, "SignatureAlgorithms")
-		case *utls.KeyShareExtension:
-			keyShares := make([]string, len(e.KeyShares))
-			for i, ks := range e.KeyShares {
-				keyShares[i] = fmt.Sprintf("CurveID=%d", ks.Group)
-			}
-			extNames = append(extNames, fmt.Sprintf("KeyShare(%v)", keyShares))
-		default:
-			extNames = append(extNames, fmt.Sprintf("Unknown(%T)", e))
-		}
-	}
-	return extNames
-}
-
 // getSupportedVersions gets supported TLS versions
 func getSupportedVersions(minVersion, maxVersion uint16) []string {
 	versions := []uint16{minVersion}
@@ -349,44 +343,6 @@ func getSupportedVersions(minVersion, maxVersion uint16) []string {
 		vers = append(vers, tlsVersionToString(v))
 	}
 	return vers
-}
-
-// getSupportedCurves gets supported curves
-func getSupportedCurves(curves []utls.CurveID) []string {
-	var curveNames []string
-	for _, c := range curves {
-		switch c {
-		case utls.CurveP256:
-			curveNames = append(curveNames, "P-256")
-		case utls.CurveP384:
-			curveNames = append(curveNames, "P-384")
-		case utls.CurveP521:
-			curveNames = append(curveNames, "P-521")
-		case utls.X25519:
-			curveNames = append(curveNames, "X25519")
-		default:
-			curveNames = append(curveNames, fmt.Sprintf("Unknown(%d)", c))
-		}
-	}
-	return curveNames
-}
-
-// getSupportedPoints gets supported point formats
-func getSupportedPoints(points []uint8) []string {
-	var pointNames []string
-	for _, p := range points {
-		switch p {
-		case 0:
-			pointNames = append(pointNames, "Uncompressed")
-		case 1:
-			pointNames = append(pointNames, "ANSI X9.62 Compressed Prime")
-		case 2:
-			pointNames = append(pointNames, "ANSI X9.62 Compressed Char2")
-		default:
-			pointNames = append(pointNames, fmt.Sprintf("Unknown(%d)", p))
-		}
-	}
-	return pointNames
 }
 
 func newCustomTransport(ipAddr, serverName string) *http.Transport {
@@ -536,9 +492,11 @@ func doSmartRequest(origReq *http.Request) (*http.Response, error) {
 		Transport: newCustomTransport(ip+":"+port, sni),
 	}
 
+	// Build full URL
 	var fullURL string
 	if origReq.URL.Scheme == "" {
-		fullURL = "https://" + origHost + origReq.URL.RequestURI()
+		// If scheme is empty, default to https
+		fullURL = "https://" + ip + origReq.URL.RequestURI()
 	} else {
 		fullURL = origReq.URL.String()
 	}
@@ -741,7 +699,7 @@ Usage:
 
 Options:
   -L http://:port        Listen on specified port for HTTP proxy (e.g., http://:8080)
-  --doh URL              DNS over HTTPS resolver URL (default: https://dns.google/dns-query)
+  --doh URL              DNS over HTTPS resolver URL (default: https://ns.net.kg/dns-query)
   -v                     Enable verbose logging
   -I                     Fetch headers only (HEAD request)
   -h, --help             Show this help message
@@ -822,35 +780,6 @@ func main() {
 		req.Method = "HEAD"
 	}
 
-	if *verbose {
-		uConn, err := newUTLSConn("tcp", connectAddr, sni)
-		log.Printf("[VERBOSE] HTTP request Host header: %s", req.Host)
-		if err != nil {
-			log.Printf("[VERBOSE] Failed to establish TLS connection: %v", err)
-		} else {
-			defer uConn.Close()
-			rawRequest := fmt.Sprintf(
-				"%s %s HTTP/1.1\r\n"+
-					"Host: %s\r\n"+
-					"User-Agent: doh4/1.0\r\n"+
-					"Accept: */*\r\n"+
-					"Connection: close\r\n"+
-					"Accept-Encoding: identity\r\n\r\n",
-				req.Method, req.URL.RequestURI(), req.Host)
-			_, err = uConn.Write([]byte(rawRequest))
-			if err != nil {
-				log.Printf("[VERBOSE] Failed to send raw request: %v", err)
-			} else {
-				buf := make([]byte, 1024)
-				n, err := uConn.Read(buf)
-				if err != nil && err != io.EOF {
-					log.Printf("[VERBOSE] Failed to read raw response: %v", err)
-				} else {
-					log.Printf("[VERBOSE] Raw server response: %q", buf[:n])
-				}
-			}
-		}
-	}
 	resp, err := client.Do(req)
 	if err != nil {
 		if *verbose {
